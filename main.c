@@ -12,6 +12,7 @@ int putchar(int c) {
     return 0;
 }
 
+#define PAYLOAD_SIZE 5
 uint8_t channel = 100;
 uint8_t address[] = {7,7,7,7,7};
 

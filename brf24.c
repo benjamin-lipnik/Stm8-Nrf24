@@ -2,8 +2,6 @@
 #include "spi.h"
 #include "stm8_utility.h"
 
-uint8_t payload_buffer[PAYLOAD_SIZE];
-
 /*INTERFACES*/
 void nrf24_delay_milliseconds(uint8_t ms) {
   util_delay_milliseconds(ms);
@@ -21,7 +19,7 @@ uint8_t nrf24_spi_read() {
   return SPI_transfer(0xff);
 }
 
-/*INTENAL*/
+/*INTRENAL*/
 void nrf24_write_register_block(uint8_t reg, uint8_t * buffer, uint8_t size) {
   nrf24_chip_select();
   nrf24_spi_write(W_REGISTER | (REGISTER_MASK & reg));

@@ -6,7 +6,13 @@
 #include "uart.h"
 #include "nRF24L01.h"
 
-void delay_milliseconds(unsigned long milliseconds) {
+void printbin(uint8_t dat) {
+  for(uint8_t i = 0; i < 8; i++) {
+    uart_write(48 + ((dat&_BV(i))>0));
+  }
+}
+
+void delay_milliseconds(unsigned long milliseconds) { //for 16Mhz
 	//delay(milliseconds);
   for(uint8_t m = 0; m < milliseconds; m++) {
     for(uint8_t i = 0; i < 160; i++) {
@@ -20,7 +26,8 @@ void delay_milliseconds(unsigned long milliseconds) {
   }
 }
 
-#define CSN_PIN 4
+#define CSN_PIN SPI_CS_PIN
+
 #define CONFIG_REG_SETTINGS_FOR_RX_MODE (_BV(PWR_UP) | _BV(PRIM_RX) | _BV(EN_CRC))
 #define RF_TX_PWR_MAX  0b110
 
@@ -29,49 +36,49 @@ uint8_t payload_buffer[PAYLOAD_SIZE];
 
 void write_register_block(uint8_t reg, uint8_t * buffer, uint8_t size) {
   SPI_chip_select();
-  SPI_write(W_REGISTER | (REGISTER_MASK & reg));
+  SPI_transfer(W_REGISTER | (REGISTER_MASK & reg));
   while(size--) {
-    SPI_write(*(buffer++));
+    SPI_transfer(*(buffer++));
   }
   SPI_chip_deselect();
 }
 void read_register_block(uint8_t reg, uint8_t * buffer, uint8_t size) {
   SPI_chip_select();
-  SPI_write(R_REGISTER | (REGISTER_MASK & reg));
+  SPI_transfer(R_REGISTER | (REGISTER_MASK & reg));
   while(size--) {
-    *(buffer++) = SPI_read();
+    *(buffer++) = SPI_transfer(0xff);
   }
   SPI_chip_deselect();
 }
 void read_payload_data (uint8_t command, uint8_t * buffer, uint8_t size) {
   SPI_chip_select();
-  SPI_write(command);
+  SPI_transfer(command);
   while(size--) {
-    *(buffer++) = SPI_read();
+    *(buffer++) = SPI_transfer(0xff);
   }
   SPI_chip_deselect();
 }
 void flush_tx() {
   SPI_chip_select();
-  SPI_write(FLUSH_TX);
+  SPI_transfer(FLUSH_TX);
   SPI_chip_deselect();
 }
 void flush_rx() {
   SPI_chip_select();
-  SPI_write(FLUSH_RX);
+  SPI_transfer(FLUSH_RX);
   SPI_chip_deselect();
 }
 uint8_t get_status () {
   SPI_chip_select();
-  SPI_write(R_REGISTER | (REGISTER_MASK & STATUS_NRF));
-  uint8_t ret = SPI_read();
+  SPI_transfer(R_REGISTER | (REGISTER_MASK & STATUS_NRF));
+  uint8_t ret = SPI_transfer(0xff);
   SPI_chip_deselect();
   return ret;
 }
 void clear_status () {
   SPI_chip_select();
-  SPI_write(W_REGISTER | (REGISTER_MASK & STATUS_NRF));
-  SPI_write(_BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT));
+  SPI_transfer(W_REGISTER | (REGISTER_MASK & STATUS_NRF));
+  SPI_transfer(_BV(RX_DR) | _BV(TX_DS) | _BV(MAX_RT));
   SPI_chip_deselect();
 }
 
@@ -81,7 +88,8 @@ int putchar(int c) {
 }
 
 int main () {
-    CLK_CKDIVR = 0; //16Mhz
+    CLK_CKDIVR = 0;//16mhz
+    //enable_interrupts();
 
     uart_init(9600);
 
@@ -98,7 +106,6 @@ int main () {
       printf("Initting radio.\n\r");
 
       delay_milliseconds(100); //OFF_TO_POWERDOWN_MILLIS
-
 
       uint8_t channel = 100;
       write_register_block(RF_CH, &channel, 1);
@@ -120,7 +127,6 @@ int main () {
 
       clear_status();
 
-
       uint8_t config = CONFIG_REG_SETTINGS_FOR_RX_MODE;
       write_register_block(CONFIG, &config, 1);
 
@@ -133,30 +139,37 @@ int main () {
         break;
       }
     }
-    delay_milliseconds(10);
+
     printf("Init successufull!!!\n\r");
 
     while(1) {
       uint8_t status = get_status();
       //printf("status: %02x\n\r", status);
+      //printf("status: "); printbin(status);
+      //printf("\n\r");
 
       if((status & 0b1110) == 0b1110) {//no data
+
+        printf("No sig.\n\r");
+
         delay_milliseconds(40);
+
         continue;
       }
+      else {
+        read_payload_data(R_RX_PAYLOAD, payload_buffer, PAYLOAD_SIZE);
 
-      read_payload_data(R_RX_PAYLOAD, payload_buffer, PAYLOAD_SIZE);
+        if(get_status() & _BV(RX_DR)) {
+          clear_status();
+        }
 
-      if(get_status() & _BV(RX_DR)) {
-        clear_status();
+        printf("data: ");
+        for(uint8_t i = 0; i < PAYLOAD_SIZE; i++) {
+          printf("%u, ", payload_buffer[i]);
+        }
+        printf("\n\r");
+
+        delay_milliseconds(1);
       }
-
-      printf("data: ");
-      for(uint8_t i = 0; i < PAYLOAD_SIZE; i++) {
-        printf("%u, ", payload_buffer[i]);
-      }
-      printf("\n\r");
-
-      delay_milliseconds(1);
     }
 }

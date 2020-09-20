@@ -8,11 +8,10 @@
 ;--------------------------------------------------------
 ; Public variables in this module
 ;--------------------------------------------------------
+	.globl _SPI_init
 	.globl _SPI_chip_select
 	.globl _SPI_chip_deselect
-	.globl _SPI_init
-	.globl _SPI_write
-	.globl _SPI_read
+	.globl _SPI_transfer
 ;--------------------------------------------------------
 ; ram data
 ;--------------------------------------------------------
@@ -50,78 +49,67 @@
 ; code
 ;--------------------------------------------------------
 	.area CODE
-;	spi.c: 4: void SPI_chip_select() {
-;	-----------------------------------------
-;	 function SPI_chip_select
-;	-----------------------------------------
-_SPI_chip_select:
-;	spi.c: 5: PC_ODR &= ~(1 << SPI_CS_PIN);
-	bres	20490, #4
-;	spi.c: 6: }
-	ret
-;	spi.c: 7: void SPI_chip_deselect() {
-;	-----------------------------------------
-;	 function SPI_chip_deselect
-;	-----------------------------------------
-_SPI_chip_deselect:
-;	spi.c: 8: while ((SPI_SR & (1 << SPI_SR_BSY)));
-00101$:
-	ld	a, 0x5203
-	jrmi	00101$
-;	spi.c: 9: PC_ODR |= (1 << SPI_CS_PIN);
-	bset	20490, #4
-;	spi.c: 10: }
-	ret
-;	spi.c: 12: void SPI_init() {
+;	spi.c: 4: void SPI_init() {
 ;	-----------------------------------------
 ;	 function SPI_init
 ;	-----------------------------------------
 _SPI_init:
-;	spi.c: 14: PC_DDR |= (1 << SPI_CS_PIN);
+;	spi.c: 6: PC_DDR |= (1 << SPI_CS_PIN);
 	bset	20492, #4
-;	spi.c: 15: PC_CR1 |= (1 << SPI_CS_PIN);
+;	spi.c: 7: PC_CR1 |= (1 << SPI_CS_PIN);
 	bset	20493, #4
-;	spi.c: 16: PC_ODR |= (1 << SPI_CS_PIN);
+;	spi.c: 8: PC_ODR |= (1 << SPI_CS_PIN);
 	bset	20490, #4
-;	spi.c: 18: SPI_CR2 = (1 << SPI_CR2_SSM) | (1 << SPI_CR2_SSI);
+;	spi.c: 10: SPI_CR2 = (1 << SPI_CR2_SSM) | (1 << SPI_CR2_SSI);
 	mov	0x5201+0, #0x03
-;	spi.c: 19: SPI_CR1 = (1 << SPI_CR1_MSTR) | (1 << SPI_CR1_SPE) | (1 << SPI_CR1_BR0);
+;	spi.c: 11: SPI_CR1 = (1 << SPI_CR1_MSTR) | (1 << SPI_CR1_BR0) | (1 << SPI_CR1_SPE);
 	mov	0x5200+0, #0x4c
-;	spi.c: 20: }
+;	spi.c: 12: }
 	ret
-;	spi.c: 22: void SPI_write(uint8_t data) {
+;	spi.c: 14: void SPI_chip_select() {
 ;	-----------------------------------------
-;	 function SPI_write
+;	 function SPI_chip_select
 ;	-----------------------------------------
-_SPI_write:
-;	spi.c: 23: SPI_DR = data;
+_SPI_chip_select:
+;	spi.c: 15: PC_ODR &= ~(1 << SPI_CS_PIN);
+	bres	20490, #4
+;	spi.c: 16: }
+	ret
+;	spi.c: 17: void SPI_chip_deselect() {
+;	-----------------------------------------
+;	 function SPI_chip_deselect
+;	-----------------------------------------
+_SPI_chip_deselect:
+;	spi.c: 19: while ((SPI_SR & (1 << SPI_SR_BSY)));
+00101$:
+	ld	a, 0x5203
+	jrmi	00101$
+;	spi.c: 20: PC_ODR |= (1 << SPI_CS_PIN);
+	bset	20490, #4
+;	spi.c: 21: }
+	ret
+;	spi.c: 23: uint8_t SPI_transfer(uint8_t data) {
+;	-----------------------------------------
+;	 function SPI_transfer
+;	-----------------------------------------
+_SPI_transfer:
+;	spi.c: 24: SPI_DR = data;
 	ldw	x, #0x5204
 	ld	a, (0x03, sp)
 	ld	(x), a
-;	spi.c: 24: while (!(SPI_SR & (1 << SPI_SR_TXE)));
-00101$:
-	ld	a, 0x5203
-	bcp	a, #0x02
-	jreq	00101$
-;	spi.c: 25: }
-	ret
-;	spi.c: 26: uint8_t SPI_read() {
-;	-----------------------------------------
-;	 function SPI_read
-;	-----------------------------------------
-_SPI_read:
-;	spi.c: 28: SPI_write(0xff);
-	push	#0xff
-	call	_SPI_write
-	pop	a
-;	spi.c: 29: while (!(SPI_SR & (1 << SPI_SR_RXNE)));
+;	spi.c: 25: while (!(SPI_SR & (1 << SPI_SR_RXNE)));
 00101$:
 	ld	a, 0x5203
 	srl	a
 	jrnc	00101$
-;	spi.c: 30: return SPI_DR;
+;	spi.c: 26: while (!(SPI_SR & (1 << SPI_SR_TXE)));
+00104$:
+	ld	a, 0x5203
+	bcp	a, #0x02
+	jreq	00104$
+;	spi.c: 27: return SPI_DR;
 	ld	a, 0x5204
-;	spi.c: 31: }
+;	spi.c: 28: }
 	ret
 	.area CODE
 	.area CONST

@@ -9,7 +9,6 @@
 void SPI_chip_select();
 void SPI_chip_deselect();
 void SPI_init();
-void SPI_write(uint8_t data);
-uint8_t SPI_read();
+uint8_t SPI_transfer(uint8_t data);
 
 #endif

@@ -370,7 +370,9 @@
 #define TIM2_CR1_UDIS           1
 #define TIM2_CR1_CEN            0
 #define TIM2_IER                _SFR_(TIM2_BASE_ADDRESS + 0x03)
+#define TIM2_IER_UIE            0
 #define TIM2_SR1                _SFR_(TIM2_BASE_ADDRESS + 0x04)
+#define TIM2_SR1_UIF            0
 #define TIM2_SR2                _SFR_(TIM2_BASE_ADDRESS + 0x05)
 #define TIM2_EGR                _SFR_(TIM2_BASE_ADDRESS + 0x06)
 #define TIM2_EGR_TG             6

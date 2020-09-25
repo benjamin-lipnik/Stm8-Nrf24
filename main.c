@@ -25,18 +25,39 @@ uint8_t address[] = {7,7,7,7,7};
 
 uint8_t no_sig_counter = 0;
 
-void set_mot_power (uint8_t power, uint8_t dir) {
+void set_mot_power (uint8_t power, uint8_t dir, uint8_t ovink) {
+
+  if(ovink > 127) {
+    ovink--;
+  }
+
+  int pd = power - (ovink-127)*1.5f;
+  int pl = power + (ovink-127)*1.5f;
+
+  if(pd > 255) pd = 255;
+  if(pd < 0) pd = 0;
+
+  if(pl > 255) pl = 255;
+  if(pl < 0) pl = 0;
+
+
   if(dir) {
     PD_ODR &= ~_BV(DIR_PIN);
     TIM2_CCR2H = 0;
-    TIM2_CCR2L = power; //Duty
+    TIM2_CCR2L = pd; //Duty
     //printf("%u\n\r", power);
+
+    TIM2_CCR3H = 0;
+    TIM2_CCR3L = pl;
   }
   else {
     PD_ODR |= _BV(DIR_PIN);
     TIM2_CCR2H = 0;
-    TIM2_CCR2L = 255-power; //Duty
+    TIM2_CCR2L = 255-pd; //Duty
     //printf("-%u\n\r", power);
+
+    TIM2_CCR3H = 0;
+    TIM2_CCR3L = 255-pl;
   }
 }
 
@@ -78,25 +99,38 @@ int main () {
     TIM2_CCER2 |= _BV(0);
 
     TIM2_CCR2H = 0;
-    TIM2_CCR2L = 120; //Duty
+    TIM2_CCR2L = 0; //Duty
 
     TIM2_CCR3H = 0;
-    TIM2_CCR3L = 135;
+    TIM2_CCR3L = 0;
 
+    //Radio init
     while(!nrf24_init(address, channel)) {
       printf("rf24 init error. Trying again.\n\r");
       util_delay_milliseconds(10);
     }
 
+    //Main loop
     while(1) {
       if(nrf24_has_rx_data()) {
         uint8_t data[PAYLOAD_SIZE] = {0};
         nrf24_read_data(data, PAYLOAD_SIZE);
+
         //printf("Data: ");
         //for(uint8_t i = 0; i < PAYLOAD_SIZE; i++) {
         //  printf("%u, ", data[i]);
         //}
         //printf("\n\r");
+        data[0] = 255 - data[0]; //invert x1 axis
+        data[1] = 255 - data[1];
+
+        if(abs(data[0]-127) < 10) {
+          data[0] = 127;
+        }
+        if(abs(data[1]-127) < 10) {
+          data[1] = 127;
+        }
+
         uint8_t dir = data[0] > 127;
         uint8_t power = 0;
 
@@ -109,13 +143,13 @@ int main () {
           power = (127-data[0])*2;
         }
 
-        set_mot_power(power, dir);
+        set_mot_power(power, dir, data[1]);
         no_sig_counter = 0;
 
       }
       else {
         if(++no_sig_counter == 255) {
-          set_mot_power(0, 1);
+          set_mot_power(0, 1, 127);
         }
         //printf("No signal.\n\r");
       }

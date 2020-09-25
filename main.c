@@ -15,7 +15,8 @@ int putchar(int c) {
 //!!!! PWM !!!!
 //PD4 -> DIR, PD3 -> PWM
 #define DIR_PIN 4
-#define PWM_PIN 3
+#define PWM1_PIN 3 //PD3
+#define PWM2_PIN 3 //PA3
 
 
 #define PAYLOAD_SIZE 5
@@ -51,16 +52,17 @@ int main () {
 
     SPI_init();
 
-
     //DIR pin
-    PD_DDR |= _BV(4);
-    PD_CR1 |= _BV(4);
-    //pwm pin
-    PD_DDR |= _BV(3);
-    PD_CR1 |= _BV(3);
+    PD_DDR |= _BV(DIR_PIN);
+    PD_CR1 |= _BV(DIR_PIN);
+    //pwm1 pin
+    PD_DDR |= _BV(PWM1_PIN);
+    PD_CR1 |= _BV(PWM1_PIN);
+    //pwm2 pin
+    PD_DDR |= _BV(PWM2_PIN);
+    PD_CR1 |= _BV(PWM2_PIN);
 
     //Timer
-
     TIM2_PSCR = 0b11;
 
     TIM2_ARRH = 0;
@@ -69,20 +71,22 @@ int main () {
     //TIM2_IER |= _BV(TIM2_IER_UIE);
     TIM2_CR1 |= _BV(TIM2_CR1_CEN);
 
-    TIM2_CCMR2 |= _BV(5) | _BV(6) | _BV(3); //pwm mode 1 //bita 0 in 1 moreta bit na nic ce ces met izhod
+    TIM2_CCMR2 |=  _BV(5) | _BV(6); //pwm mode 1 //bita 0 in 1 moreta bit na nic ce ces met izhod
     TIM2_CCER1 |= _BV(4);
 
-    TIM2_CCR2H = 0;
-    TIM2_CCR2L = 0; //Duty
+    TIM2_CCMR3 |= _BV(5) | _BV(6); //pwm mode 1 //bita 0 in 1 moreta bit na nic ce ces met izhod
+    TIM2_CCER2 |= _BV(0);
 
-    //PD_ODR |= _BV(DIR_PIN);
+    TIM2_CCR2H = 0;
+    TIM2_CCR2L = 120; //Duty
+
+    TIM2_CCR3H = 0;
+    TIM2_CCR3L = 135;
 
     while(!nrf24_init(address, channel)) {
       printf("rf24 init error. Trying again.\n\r");
       util_delay_milliseconds(10);
     }
-
-    //PD_ODR |= _BV(4);
 
     while(1) {
       if(nrf24_has_rx_data()) {
@@ -107,8 +111,6 @@ int main () {
 
         set_mot_power(power, dir);
         no_sig_counter = 0;
-
-        //printf("%d\n\r", data[0] - 127);
 
       }
       else {

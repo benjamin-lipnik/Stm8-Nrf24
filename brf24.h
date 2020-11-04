@@ -10,9 +10,14 @@
   #define _BV(bit) (1<<(bit))
 #endif
 
+#define BITRATE250KBPS  0b100000
+#define BITRATE1MBPS    0
+#define BITRATE2MBPS    0b001000
 
-#define CONFIG_REG_SETTINGS_FOR_RX_MODE (_BV(PWR_UP) | _BV(PRIM_RX) | _BV(EN_CRC))
 #define RF_TX_PWR_MAX  0b110
+#define CONFIG_REG_SETTINGS_FOR_RX_MODE (_BV(PWR_UP) | _BV(PRIM_RX) | _BV(EN_CRC))
+
+
 
 uint8_t nrf24_init(uint8_t * rx_address, uint8_t channel);
 uint8_t nrf24_has_rx_data();

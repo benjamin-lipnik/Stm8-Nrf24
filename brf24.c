@@ -19,7 +19,9 @@ uint8_t nrf24_spi_read() {
   return SPI_transfer(0xff);
 }
 
-/*INTRENAL*/
+/*INTERNAL*/
+
+/*PRIVATE FUNCTIONS*/
 void nrf24_write_register_block(uint8_t reg, uint8_t * buffer, uint8_t size) {
   nrf24_chip_select();
   nrf24_spi_write(W_REGISTER | (REGISTER_MASK & reg));
@@ -75,7 +77,7 @@ uint8_t nrf24_init(uint8_t * rx_address, uint8_t channel) {
   //uint8_t channel = 100;
   nrf24_write_register_block(RF_CH, &channel, 1);
 
-  uint8_t rf_setup = RF_TX_PWR_MAX | _BV(3);
+  uint8_t rf_setup = RF_TX_PWR_MAX | BITRATE2MBPS;
   nrf24_write_register_block(RF_SETUP, &rf_setup, 1);
 
   //uint8_t address[] = {7,7,7,7,7};

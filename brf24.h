@@ -18,7 +18,6 @@
 #define CONFIG_REG_SETTINGS_FOR_RX_MODE (_BV(PWR_UP) | _BV(PRIM_RX) | _BV(EN_CRC))
 
 
-
 uint8_t nrf24_init(uint8_t * rx_address, uint8_t channel);
 uint8_t nrf24_has_rx_data();
 void nrf24_read_data (void * data_buffer, uint8_t size);

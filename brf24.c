@@ -18,6 +18,8 @@ void nrf24_spi_write(uint8_t data) {
 uint8_t nrf24_spi_read() {
   return SPI_transfer(0xff);
 }
+//You should init spi and or csn pin
+uint8_t nrf24_spi_init() {}
 
 /*INTERNAL*/
 
@@ -72,6 +74,10 @@ void nrf24_clear_status () {
 
 /*PUBLIC FUNCTIONS*/
 uint8_t nrf24_init(uint8_t * rx_address, uint8_t channel) {
+
+  nrf24_spi_init();
+
+
   nrf24_delay_milliseconds(100); //OFF_TO_POWERDOWN_MILLIS
 
   //uint8_t channel = 100;
